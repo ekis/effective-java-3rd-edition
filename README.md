@@ -15,7 +15,7 @@
 
 ### Chapter 02 - Creating and Destroying Objects
 
-####Item 1 - Consider static factory methods instead of constructors
+#### Item 1 - Consider static factory methods instead of constructors
 - traditional vs. flexible way of object instantiation
 - example of static factory method:
 ```java
@@ -65,7 +65,7 @@ public static Boolean valueOf(boolean b) {
 ##### Conclusion
 Avoid the reflex to provide a public constructor and consider static methods/factories. 
 
-####Item 2 - Consider a builder when faced with many constructor params
+#### Item 2 - Consider a builder when faced with many constructor params
 - static factories and constructors share a limitation: they scale poorly with the increase of (optional) params
 - traditional ways of dealing with this:
   - _telescoping constructor_
@@ -92,7 +92,7 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
     - client code much easier to read and write than telescoping constructors
     - builder are much safer than JavaBeans   
      
-####Item 3 - Enforce the singleton property when a private constructor or enum type
+#### Item 3 - Enforce the singleton property when a private constructor or enum type
 - _singleton_ is a class that is instantiated exactly once
 - making a class a singleton can make it difficult to test
 - three common ways of implementing it:
@@ -104,7 +104,7 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
     - well-defended against reflection
     - solves serialization problems
 
-####Item 4 - Enforce non-instantiability with a private constructor
+#### Item 4 - Enforce non-instantiability with a private constructor
 - occasionally, we want to write a class that is simply a grouping of static methods and static fields
 - such _utility classes_ have acquired a bad reputation due to their abuse in avoiding thinking in terms of objects but they have valid uses:
   - group related methods on primitive values or arrays
@@ -119,7 +119,7 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
     - the class cannot be subclassed as there are no available constructors
     - still, it is good to document this a make the class itself ```final```
 
-####Item 5 - Prefer dependency injection to hard-wiring resources
+#### Item 5 - Prefer dependency injection to hard-wiring resources
 - do not use static utility methods or singletons to handle creations of class' resources
   - these yield inflexible and untestable classes
 - favour dependency injection by supplying the required resource parametrically
@@ -131,10 +131,10 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
       - the client should be able to pass in a factory that requires any subtype of a specified type
 - the manual dependency injection can be automatised with frameworks
 
-####Item 6 - Avoid creating unnecessary objects
+#### Item 6 - Avoid creating unnecessary objects
 
-####Item 7 - Eliminate obsolete object references
+#### Item 7 - Eliminate obsolete object references
 
-####Item 8 - Avoid finalizers and cleaners
+#### Item 8 - Avoid finalizers and cleaners
 
-####Item 9 - Prefer ```try-with-resources``` to ```try-finally```
+#### Item 9 - Prefer ```try-with-resources``` to ```try-finally```
