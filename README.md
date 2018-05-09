@@ -132,9 +132,95 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
 - the manual dependency injection can be automatised with frameworks
 
 #### Item 6 - Avoid creating unnecessary objects
+- creating unnecessary objects can be avoided by using static factory methods (Item 1)
+- some object creations are much more expensive than others
+  - it may be advisable to cache such objects
+  - example: regex matching
+- immutable objects can trivially be reused
+- other examples are [Adapter](https://en.wikipedia.org/wiki/Adapter_pattern#Java)s (a.k.a. _views_)
+  - adapter is an object delegating to a backing object, providing an alternative interface
+  - has not state beyond the backing object thus provides a view of it
+  - example: ```keySet()``` in ```Map``` interface
+- autoboxing can often subtly create unnecessary objects
+- almost never create own _object pools_
+  - JVM gc will almost always outperform such pools
+  - exception to this: very expensive objects
+    - example: database connection objects
+- counterpoint to this is _defencive copying_ (Item 50)
 
 #### Item 7 - Eliminate obsolete object references
+- when relying on automatic gc, be wary of leaks
+  - example: a resizing-array stack that doesn't null out its references on ```pop()```
+- common sources of leaks
+  - classes that manage their own memory
+  - caches
+    - can be mitigated with ```WeakHashMap```
+    - sophisticated caches might need to use ```java.lang.ref``` directly
+  - listeners and other callbacks
+    - APIs that register callbacks but don't deregister them explicitly
+    - can be mitigated with ```WeakHashMap```
+- conclusion: it very desirable to learn to anticipate such problems before they occur as they can be very costly to fix
 
 #### Item 8 - Avoid finalizers and cleaners
+- _finalizers_ and _cleaners_ are used to reclaim non-memory resources
+  - example: input/output streams, files, etc.
+  - they are not analogues of C++ destructors
+- finalizers are unpredictable, dangerous and generally unnecessary
+- cleaners are less dangerous than finalizers but still slow, unpredicatble and generally unnecessary
+- disadvantages:
+  - spec makes no guarantee when they'll be executed
+    - their execution is a function of GC algorithm, thus JVM implementation
+    - never do anything time-critical in a finalizer or cleaner
+    - providing a finalizer may arbitrarily delay reclamation of class' instances
+    - cleaners are a bit better but still run under the control of GC so still the same applies
+    - any existing methods that _claim_ to trigger finalization are decade-old traps
+      - examples: ```System.runFinalizerOnExit``` or ```Runtim.runFinalizerOnExit```
+  - uncaught exception thrown during finalization is ignored and finalization of that object terminates
+    - object is potentially left in corrupted state
+    - normally, uncaught exception terminates the executing thread and dumps stacktrace but not if it occurs in finalizer
+    - cleaners do not suffer from this problem
+  - there is a _severe_ performance GC penalty for using finalizers and cleaners
+    - finalizers: ~50x slower reclamation
+    - cleaners: ~5x slower reclamation, equal to finalizers if they're used to clean all instance of the class
+  - finalizers open up classes to finalizer attacks
+    - if an exception is thrown during finalization, the finalizer leaves the class unreclaimed
+    - attackers can exploit this and run code that shouldnt've existed
+    - to protect non-final classes against it - write a ```final finalize()``` that does nothing
+- instead of using finalizers or classes simply use ```AutoCloseable``` 
+  - require clients to invoke ```close()``` whenever instance is not required
+- legitimate uses:
+  - act as a safety net for closeables
+    - think long and hard before doing so
+  - reclaim native peer objects
+- conclusion: don't use cleaners, or in releases prior to Java 9, finalizers - except as a safety net or to terminate non-critical native resources. Even then, beware the indeterminacy and performance consequences
 
 #### Item 9 - Prefer ```try-with-resources``` to ```try-finally```
+- Java libraries include many resources that must be closed manually by invoking ```close()```
+  - examples: ```InputStream```, ```OutputStream```, ```java.sql.Connection```, etc.
+- closing objects is often overlooked by clients
+- many use finalizers as safety net, with dire performance consequences (Item 8)
+- historically, ```try-finally``` was the best way to guarantee a resource would be closed properly, even when facing exception or return
+  - while it doesn't look bad for a single resource, it doesn't scale well with the increase of resources required to be closed
+    - nested ```try-finally``` blocks stick out like a sore thumb
+  - it's tricky to get it right, even in JDK
+  - nested ```finally``` block complicate debugging
+- ```try-with-resources``` suffers none of this issues
+  - example: 
+  ```java
+      // try-with-resources on multiple resources - short and sweet
+      static void copy(String src, String dst) throws IOException {
+      try (InputStream in = new FileInputStream(src);
+           OutputStream out = new FileOutputStream(dst)) {
+           byte[] buf = new byte[BUFFER_SIZE];
+           int n;
+           while ((n = in.read(buf)) >= 0)
+           out.write(buf, 0, n);
+           }
+      } catch (IOException e) {
+           // do something here
+      }
+  ```
+  - shorter, more readable than ```try-finally```
+  - provides far better diagnostics
+    - no exceptions are suppressed
+- conclusion: always use ```try-with-resources``` when working with resources that must be closed
