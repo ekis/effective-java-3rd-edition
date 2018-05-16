@@ -266,7 +266,7 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
   - rely on IDEs to generate the ```equals()```
   - if manual tuning is really necessary, pay attention to equivalence relation violation (write tests!) and performance
 
-#### Item 11 - Always override ```hashCode()``` when overriding ```equals()
+#### Item 11 - Always override ```hashCode()``` when overriding ```equals()```
 - violating this rule will violate the general contract for ```hashCode()```
   - it prevents proper functioning of hash-based collections
 - general ```hashCode()``` contract:
