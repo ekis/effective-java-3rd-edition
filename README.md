@@ -246,20 +246,20 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
   - this is generally the case for *value classes*
   - examples: ```java.util.Integer``` or ```java.util.String```
 - overriding the ```equals()``` implies adhering to its general contract of *equivalence relation*:
-  - (reflexivity) ```x.equals(x) == true```, for x != null
+  - (*reflexivity*) ```x.equals(x) == true```, for x != null
     - hard to violate unintentionally
-  - (symmetry) ```x.equals(y) == y.equals(x)```, for x, y != null
+  - (*symmetry*) ```x.equals(y) == y.equals(x)```, for x, y != null
     - example: compare ordinary and case insensitive strings
-  - (transitivity) ```x.equals(y) == y.equals(z) == x.equals(z)```, for x, y, z != null
+  - (*transitivity*) ```x.equals(y) == y.equals(z) == x.equals(z)```, for x, y, z != null
     - examples: subclass adds a new value component; ```java.util.Date``` and ```java.util.Timestamp```
     - easier to violate when using inheritance
     - once this property is violated, subsequent fixes are likely to violate other properties
     - fundamental problem of equivalence relations in OO languages => there is no way to extend an instantiable class and add a value component whilst preserving the relation!
     - workaround: favour composition over inheritance
-  - (consistency) ```x.equals(y) == x.equals(y)```, for x, y != null
+  - (*consistency*) ```x.equals(y) == x.equals(y)```, for x, y != null
     - example: 'java.util.URL'
     - do not write ```equals()``` that depend on unreliable resources
-  - (non-nullity) ```x.equals(null) == false```, for x != null
+  - (*non-nullity*) ```x.equals(null) == false```, for x != null
     - hard to violate unintenionally, unless an exception is thrown instead of returning ```false```
 - violation of this contract means it is **uncertain how other objects will behave when confronted with our object**
 - conclusions: 
@@ -270,8 +270,8 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
 - violating this rule will violate the general contract for ```hashCode()```
   - it prevents proper functioning of hash-based collections
 - general ```hashCode()``` contract:
-  - (consistency) ```x.hashCode() == x.hashCode()```, for x != null
-  - (equality) ```x.equals(y) => (x.hashCode() == y.hashCode())```, for x, y != null
+  - (*consistency*) ```x.hashCode() == x.hashCode()```, for x != null
+  - (*equality*) ```x.equals(y) => (x.hashCode() == y.hashCode())```, for x, y != null
 - worst possible hash-code implementation is returning the same number
   - degrades performance horrifically
 - conclusions:
@@ -290,3 +290,42 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
 - rely on IDE to create a good ```toString()``` implementation
 
 #### Item 13 - Override ```clone()``` judiciously
+- conclusions: 
+  - do not use ```clone()```
+  - use static factory to copy objects whenever possible
+
+#### Item 14 - Consider implementing ```Comparable```
+- isn't inherited from ```Object``` type
+- located in functional interface ```Comparable```
+- similar to ```equals()``` except it permits order comparisons in addition to simple equality comparisons
+- implementing ```Comparable```, class indicates its instances follow *natural ordering*
+- it also makes it easy to apply various searching, sorting and extreme values computations on such a class
+  - example: ```java.util.String```
+  - class automatically interoperates with a variety of generic algorithms and collection implementations
+  - small effort and code footprint to leverage existing (vast) capabilites
+- general contract of ```compareTo()``` is very similar to ```equals```:
+  - (*reflexivity*) ```(x.compareTo(y) == 0) => (sgn(x.compareTo(z) == sgn(y.compareTo(z))```, for x, y, z != null
+  - (*symmetry*) ```sgn(x.compareTo(y)) == -sgn(y.compareTo(x))```, for x, y != null
+    - helps imposing total order
+  - (*transitivity*) ```(x.compareTo(y) && y.compareTo(z)) > 0 => (x.compareTo(z)) > 0```, for x, y, z != null
+    - helps imposing total order
+  - (*optional consistency with equals*) ```(x.compareTo(y) == 0) <=> (x.equals(y))```, for x, y != null
+    - if violated, still will yield valid comparisons but will generally not guarantee obeying the general contract for collections and maps
+    - examples: ```java.util.BigDecimal``` in ```HashSet``` and ```TreeSet```
+- to compare object ref fields, invoke ```compareTo()``` recursively
+- do not use relational operators in ```compareTo()```
+  - use ```compare()``` on boxed primitive types
+  - alternately, use comparator fluent construction methods in ```Comparator``` interface
+- do not use hashCode arithmetics-based comparisons
+  - though somewhat more performant, they are fraught with danger from integer overflow and FP arithmetic artifacts
+  - use the same techniques as in the bullet point above
+- generally, same limitations and workarounds as for the ```equals()``` apply here
+  - exceptions may be thrown, however, without violating the contract
+- conclusions:
+  - whenever a value class has sensible ordering, ```Comparable``` should be implemented
+    - easy sorting, searching and usage in comparison-based collections
+  - do not use relational comparison operators to determine the result of comparing two elements
+    - rely on static ```compare()``` in the boxed primitive types
+    - alternately, use comparator construction methods in ```Comparator``` interface
+
+### Chapter 04 - Classes and Interfaces
