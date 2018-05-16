@@ -224,3 +224,69 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
   - provides far better diagnostics
     - no exceptions are suppressed
 - conclusion: always use ```try-with-resources``` when working with resources that must be closed
+
+### Chapter 03 - Methods Common to All Objects
+
+#### Item 10 - Obey the general contract when overriding ```equals()```
+- overriding the ```equals()``` seems simple but there are many pitfalls and consequences can be dire
+- easiest way to avoid problems is not override the method at all
+  - then, we fall back to object identity only - each object is equal only to itself
+- do *not* override the method if:
+  - each instance of the class is inherently unique
+    - example: ```java.util.thread.Thread```
+  - there is no need for the class to provide 'logical equality' test
+    - example: ```java.util.regex.Pattern```
+  - superclass is already overriding ```equals()``` and superclass' behaviour is appropriate for the subclass
+    - example: most root classes from ```java.util.collection``` and subclasses of ```java.util.Map``` inherit ```equals()``` behaviour from their abstract implementations
+  - the class is (package-)private and we're certain ```equals()``` will never be invoked
+    - the risk-averse may throw an exception in the subclass if ```equals()``` is called
+  - the class is *instance controlled* (Item 1)
+    - example: enum types
+- *do* override the method if a class has a notion of **logical equality** that differs from mere object identity
+  - this is generally the case for *value classes*
+  - examples: ```java.util.Integer``` or ```java.util.String```
+- overriding the ```equals()``` implies adhering to its general contract of *equivalence relation*:
+  - (reflexivity) ```x.equals(x) == true```, for x != null
+    - hard to violate unintentionally
+  - (symmetry) ```x.equals(y) == y.equals(x)```, for x, y != null
+    - example: compare ordinary and case insensitive strings
+  - (transitivity) ```x.equals(y) == y.equals(z) == x.equals(z)```, for x, y, z != null
+    - examples: subclass adds a new value component; ```java.util.Date``` and ```java.util.Timestamp```
+    - easier to violate when using inheritance
+    - once this property is violated, subsequent fixes are likely to violate other properties
+    - fundamental problem of equivalence relations in OO languages => there is no way to extend an instantiable class and add a value component whilst preserving the relation!
+    - workaround: favour composition over inheritance
+  - (consistency) ```x.equals(y) == x.equals(y)```, for x, y != null
+    - example: 'java.util.URL'
+    - do not write ```equals()``` that depend on unreliable resources
+  - (non-nullity) ```x.equals(null) == false```, for x != null
+    - hard to violate unintenionally, unless an exception is thrown instead of returning ```false```
+- violation of this contract means it is **uncertain how other objects will behave when confronted with our object**
+- conclusions: 
+  - rely on IDEs to generate the ```equals()```
+  - if manual tuning is really necessary, pay attention to equivalence relation violation (write tests!) and performance
+
+#### Item 11 - Always override ```hashCode()``` when overriding ```equals()
+- violating this rule will violate the general contract for ```hashCode()```
+  - it prevents proper functioning of hash-based collections
+- general ```hashCode()``` contract:
+  - (consistency) ```x.hashCode() == x.hashCode()```, for x != null
+  - (equality) ```x.equals(y) => (x.hashCode() == y.hashCode())```, for x, y != null
+- worst possible hash-code implementation is returning the same number
+  - degrades performance horrifically
+- conclusions:
+  - it is mandatory to override ```hashCode()``` each time ```equals()``` is overridden
+    - failure to do so precludes correct functioning of the program (fallback on Object)
+  - obey the general ```hashCode()``` contract
+  - rely on the ```Object.hashCode(...)``` to compute the hash-code unless performance is very important
+
+#### Item 12 - Always override ```toString()```
+- makes systems using the class easier to debug
+  - disadvantage: once specified, it's for-life
+- clearly document intentions
+- don't override ```toString()``` on
+  - static utility class (Item 4)
+  - enum types (Item 34)
+- rely on IDE to create a good ```toString()``` implementation
+
+#### Item 13 - Override ```clone()``` judiciously
