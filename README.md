@@ -329,3 +329,124 @@ Avoid the reflex to provide a public constructor and consider static methods/fac
     - alternately, use comparator construction methods in ```Comparator``` interface
 
 ### Chapter 04 - Classes and Interfaces
+
+#### Item 15 - Minimise the accesibility of classes and members
+- well-designed components:
+  - hide their internal data and other implementation details from other components
+  - thus, they cleanly separate their API from its implementation
+  - components are then oblivios to each other's workings
+  - this is *encapsulation* (information hiding) -> a fundamental tenet of software design
+- importance of encapsulation:
+  - *decouples* the components comprising a system
+  - this allows for development/optimisation/usage/reasoning/modification *in isolation*
+    - speeds up development (parallelisation)
+    - reduces maintenance costs (easier reasoning/debugging/replacement)
+    - makes for effective performance tuning (isolation -> does not influence correctness of others)
+    - increases reuse (decoupled components usually provide use in contexts beyond original design)
+    - de-risks development (individual components may prove successful even if the system does not) 
+- Java encapsulation facilities:
+  - access control mechanism (```private```, ```protected```, ```public``` keywords + default access)
+- encapsulation rule of thumb: *make each class/member as inaccessible as possible*
+  - after carefully designing a class' public API, the reflex should be to *make all other members private*
+  - change design if you find yourself opening up the API too frequently
+    - there may be a better decomposition with higher decoupling
+  - some fields may leak into the exported API if the class implements ```Serializable``` interface
+- huge increase in visibility when going from default to ```protected```
+  - becomes a part of exported API (has to be supported forever)
+  - should be relatively rare
+- overridden methods cannot have restrictive access level in the subclass than it is in the superclass
+  - fields a compile-time error
+  - a consequence of *Liskov substition principle*
+  - special rule -> if a class implements an interface, all implemented methods *must* be public
+- opening up a class to facilitate testing is acceptable (to a degree)
+  - the less restrictive access must not be any higher than *default* access
+  - it is fine to make the code "worse" in order to cover it with tests (M. Feathers, "Working Effectively With Legacy Code")
+- instance fields of public classes should rarely be public
+  - gives up :
+    - the ability to enforce invariants on the field
+    - the flexibility to change data structure
+  - not thread-safe
+  - same applies for ```static``` fields, except if they are also ```final```
+    - exception: it's always wrong to expose a mutable data structure as ```public static final``` (e.g. Arrays, Lists...)
+    - for such instances make an accessor which defencively copies the data structure and make the field ```private```
+- Java 9 modules:
+  - module is a *group of packages*, much like a pakcage is group of classes
+  - it may explicitly *export* some of its packages (via export declarations in its module declaration ```module-info.java```)
+  - public/protected members of unexported packages in a module are inaccessible outside the module
+    - within, they work as before
+  - using the module system allows us to share classes among packages within a module without making them visible to the entire world
+  - the need for this kind of sharing is relatively rar and can often be eliminated by rearranging classes within a package
+  - it is unclear if it will achieve widespread use outside of the JDK itself (where it's strictly enforced)
+- summary:
+  - reduce accebility of program elements as much as possible
+  - do not expose mutable types as ```public static final``` fields
+  
+#### Item 16 - Favour accessors over public fields in public classes
+
+- occasionaly, degenerate classes are rolled out such as this one:
+```java
+class Point {
+    public double x;
+    public double y
+}
+```
+- if confined to package-private or private access modifier, they can be very useful in reducing visual clutter and overhead
+  - making them more accessible would be dangerous and is not advised
+    - there are examples in JDK that violate this rule (```java.awt.Point```, ```java.awt.Dimension```)
+
+#### Item 17 - Minimise mutability
+
+- immutable classes are classes whose instances cannot be modified
+  - all of the data in the object is fixed for the lifetime of the object
+  - e.g. ```java.lang.String```, the boxed primitive classes, ```BigInteger``` and ```BigDecimal```
+- many reasons to use immutable classes -> easier to design, implement and use than mutable classes
+- to make a class mutable, follow these 5 rules:
+  - don't provide mutators
+  - ensure that the class cannot be extended
+  - make all fields final
+  - make all fields private
+  - ensure exclusive access to any mutable components
+- immutable classes are easier to realise using *functional*, rather than *imperative* approach
+- immutable objects are *simple*
+  - has always exactly *one* state - the state in which it was created
+  - they are easier to use reliably
+- immutable object are inherently *thread-safe* (they require no synchronisation)
+  - thus can be shared freely, promoting reuse
+  - no defencive copies necessary
+  - their internals can be shared freely
+- immutable objects make great building blocks for other objects
+  - they also make great map keys or set elements
+- immutable object provide atomicity for free
+- the one disadvantage -> they require a separate object for each distinct value
+  - the problem is exacerbated if the object is a part of multistep transformation
+  - one way to solve this issue is by providing mutable 'companion classes'
+- no method may produce an *externally visible* change in the object's state
+  - consider using *lazy initialisation* technique
+- summary:
+  - classes should be immutable unless there is a very good reason to make them mutable
+  - if a class cannot be made immutable, limit its mutability as much as possible
+    - declare every field ```private final``` unless there is a good reason to do so otherwise
+- constructors should create fully initialised objects with all their invariants established
+  - e.g. ```CountDownLatch```
+
+#### Item 18 Favour composition over inheritance
+
+- this chapter applies to *implementation* inheritance, not *interface* inheritance
+- inheritance is a powerful way to achieve code reuse 
+- can lead to fragile software if employed inappropriately
+- safe to use:
+  - within a package (where sub- and super-class are under control of the same programmers)
+  - if a class specifically is designed and documented for inheritance
+- inheritance violates encapsulation
+  - subclass depends on implementation details of the superclass
+  - both must evolve in tandem
+  - e.g. ```HashSet``` extension
+    - depending on superclass' method to implement your own can lead to fragility - as the superclass evolves, your code may break without any changes
+  - related cause of fragility is that their superclass can acquire new methods in subsequent releases
+    - e.g. ```Hashtable``` and ```Vector``` classes had to had their security holes fixed before being retrofitted to participate in Collections framework
+- solution to these issues is the application of *composition*
+  - existing class becomes a component of the new one
+  - new class is free to *forward* calls to the old class where appropriate (*forwarding methods*)
+  - resulting classes are then rock solid:
+    - they don't depend on the implementation details of the existing class
+    
