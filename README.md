@@ -429,7 +429,7 @@ class Point {
 - constructors should create fully initialised objects with all their invariants established
   - e.g. ```CountDownLatch```
 
-#### Item 18 Favour composition over inheritance
+#### Item 18 - Favour composition over inheritance
 
 - this chapter applies to *implementation* inheritance, not *interface* inheritance
 - inheritance is a powerful way to achieve code reuse 
@@ -449,4 +449,61 @@ class Point {
   - new class is free to *forward* calls to the old class where appropriate (*forwarding methods*)
   - resulting classes are then rock solid:
     - they don't depend on the implementation details of the existing class
+  - the forwarder-wrapper pattern is also known as the [Decorator](https://en.wikipedia.org/wiki/Decorator_pattern#Java) pattern
+    - this combination of composition and forwarding is also informally defined as *delegation*
+  - disadvantages of wrapper classes are few:
+    - not suited for use in callback frameworks (callbacks elude the wrapper - SELF problem)
+    - theoretical performance and memory impacts
+    - tedious to write forwarding classes
+- inheritance is only appropriate for classes that pass the "is-a" test
+  - answer truthfully to question "If B extended A, is B really an A?"
+  - a number of obvious violations in JDK
+    - ```Stack``` extends ```Vector```
+    - ```Properties``` extends ```Hashtable```
+- does the class contemplated to extends has any flaws in its API?
+- summary:
+  - inheritance is powerful but problematic as it violates encapsulation
+  - appropriate *only* when a genuine subtype relationship exists between the sub- and super-class
+  - inheritance may lead to fragility
+    - use composition and forwarding instead to avoid this fragility
+    - wrapper classes are more robust and powerful than subclasses 
     
+#### Item 19 - Design and document for inheritance or else prohibit it
+- what does it mean to design/document for inheritance?
+  - the class must document its self-use of overridable methods
+    - this is one special case where it's ok to document implementation detail (unfortunate side-effect of inheritance violating encapsulation)
+  - the class may have to provide hooks into its internal workings
+    - careful choosing of protected methods
+    - enables programmers to write efficient subclasses without undue pain
+  - the only way to test a class designed for inheritance is to write subclasses
+    - test before releasing the class
+  - constructors *must not* invoke overridable methods (directly or indirectly)
+    - safe to invoke private/final/static methods, none of which are overridable
+  - ```Cloneable``` or ```Serializable``` interfaces are especially difficult to design for inheritance
+    - use neither in such classes
+- designing a class for inheritance requires great effort and places substantial limitations on the class
+  - occasionaly, it is clearly the right thing to do (e.g. abstract classes, interfaces or skeletal implementations)
+  - the opposite also holds (e.g. immutable classes)
+- best approach is to prohibit subclassing in classes that are not designed and documented for safe subclassing
+  - prohibit inheritance on classes implementing an interface that captures its essence
+  - for other classes, ensure at least that the class never invokes any of its overridable methods and document this
+- summary:
+  - designing a class for inheritance is hard
+  - document all self-use patterns
+  - export one or more protected methods
+  - strongly consider prohibiting inheritance altogether
+
+#### Item 20 - Prefer interfaces to abstract classes
+
+- two mechanisms to define a type that permits multiple implementations: interfaces and abstract classes
+- existing classes can easily be retrofitted to implement a new interface
+  - they cannot, in general, be retrofitted with a new abstract class without doing collateral damage to the type hierarchy
+- interfaces are ideal for defining *mixins*
+  - a mixin is a type thtat a class implements additionally to its 'primary type' 
+    - e.g. ```Comparable```
+  - abstract classes cannot be used to define mixins
+- interfaces allow for the construction of non-hierarchical type frameworks
+  - they can prevent *combinatorial explosion* produced by abstract classes
+- interfaces enable safe, powerful functionality enhancements
+  - wrapper class idiom
+  
