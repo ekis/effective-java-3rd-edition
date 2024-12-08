@@ -400,7 +400,7 @@ class Point {
   - all of the data in the object is fixed for the lifetime of the object
   - e.g. ```java.lang.String```, the boxed primitive classes, ```BigInteger``` and ```BigDecimal```
 - many reasons to use immutable classes -> easier to design, implement and use than mutable classes
-- to make a class mutable, follow these 5 rules:
+- to make a class immutable, follow these 5 rules:
   - don't provide mutators
   - ensure that the class cannot be extended
   - make all fields final
